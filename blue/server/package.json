@@ -1,0 +1,23 @@
+{
+  "name": "blue-server",
+  "version": "1.0.0",
+  "description": "Blue AI Agent — backend",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "multer": "^2.0.0",
+    "nanoid": "^5.0.7",
+    "pdf-parse": "^1.1.1",
+    "mammoth": "^1.8.0"
+  }
+}

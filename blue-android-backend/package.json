@@ -1,0 +1,16 @@
+{
+  "name": "blue-android-backend",
+  "version": "1.0.0",
+  "description": "BLUE Android — backend API (Vercel serverless functions) for command planning and chat, backed by Gemini.",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "test": "node test/run-tests.js"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "vercel": "^37.0.0"
+  }
+}
