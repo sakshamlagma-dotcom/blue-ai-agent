@@ -111,7 +111,11 @@ export async function runAgent({ history = [], userMessage, mode = "agent", onSt
 
         toolCallCount++;
         toolCallLog.push({ name: call.name, args: call.args, error: toolError, result: toolResult });
-        toolResponses.push({ name: call.name, content: JSON.stringify(toolResult) });
+        toolResponses.push({
+          name: call.name,
+          id: call.id,
+          content: JSON.stringify(toolResult),
+        });
       }
 
       if (callsToExecute.length > 0) {
@@ -123,9 +127,12 @@ export async function runAgent({ history = [], userMessage, mode = "agent", onSt
           content: result.text || "",
           parts: [
             ...(result.text ? [{ text: result.text }] : []),
-            ...callsToExecute.map((call) => ({
-              functionCall: { name: call.name, args: call.args },
-            })),
+            ...callsToExecute.map(
+              (call) =>
+                call.part || {
+                  functionCall: { name: call.name, args: call.args },
+                }
+            ),
           ],
         });
         messages.push({ role: "tool", results: toolResponses });

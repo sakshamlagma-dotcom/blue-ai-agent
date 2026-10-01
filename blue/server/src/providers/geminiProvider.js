@@ -24,6 +24,7 @@ function toGeminiContents(messages) {
         role: "user",
         parts: (m.results || []).map((r) => ({
           functionResponse: {
+            ...(r.id !== undefined ? { id: r.id } : {}),
             name: r.name,
             response: { result: r.content },
           },
@@ -81,8 +82,13 @@ async function callGemini({ contents, systemPrompt, tools, temperature = 0.6 }) 
 
   const textParts = parts.filter((p) => typeof p.text === "string").map((p) => p.text);
   const functionCalls = parts
-    .filter((p) => p.functionCall)
-    .map((p) => ({ name: p.functionCall.name, args: p.functionCall.args || {} }));
+    .filter((part) => part.functionCall)
+    .map((part) => ({
+      name: part.functionCall.name,
+      args: part.functionCall.args || {},
+      id: part.functionCall.id,
+      part,
+    }));
 
   return {
     text: textParts.join("\n").trim(),
