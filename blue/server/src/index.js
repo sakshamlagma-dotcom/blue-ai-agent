@@ -17,6 +17,10 @@ app.use(cors({ origin: env.clientOrigin, credentials: true }));
 app.use(express.json({ limit: "2mb" }));
 app.use("/uploads", express.static(env.uploadDir));
 
+if (env.nodeEnv === "production") {
+  app.use(express.static(path.resolve(env.serverRoot, "../client/dist")));
+}
+
 app.use("/api", healthRoutes); // no rate limit on health check
 app.use("/api", apiRateLimiter, chatRoutes);
 app.use("/api", apiRateLimiter, conversationRoutes);

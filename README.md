@@ -19,6 +19,12 @@ The server creates its SQLite database on first start. For deployment and config
 
 From `blue-android-backend`, run `npm install` followed by `npm test`. The test suite uses a mocked Gemini API and does not need a real API key. Local Vercel development and deployment instructions are in that project's README.
 
+## Deploy the web app to Render
+
+The root [`render.yaml`](render.yaml) deploys the web client and Express API together as one Render web service. Connect this repository to Render as a Blueprint and provide `GEMINI_API_KEY` when prompted. Render builds the Vite client, serves it from Express, and checks `/api/health`; the published URL serves the full app from a single origin.
+
+The free service uses local SQLite and upload storage, which Render can discard on restarts or deploys. Use persistent storage or a managed database before relying on production conversation history or uploaded files.
+
 ## Before public deployment
 
 Both projects are independent of each other's keys and runtime. Keep real credentials in local `.env` files or deployment environment settings, never in source control. The Android API currently has no device authentication or shared rate limiting, and the web app does not yet implement user authentication; add the appropriate protections before exposing either service to untrusted users.

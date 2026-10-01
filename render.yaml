@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: blue-ai-agent
+    runtime: node
+    plan: free
+    buildCommand: npm ci --prefix blue/client && npm run build --prefix blue/client && npm ci --prefix blue/server
+    startCommand: npm --prefix blue/server start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: PUPPETEER_SKIP_DOWNLOAD
+        value: "true"
