@@ -1,0 +1,10 @@
+{
+  "name": "blue-render-service",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postinstall": "npm ci --prefix ../blue/server && npm ci --prefix ../blue/client && npm run build --prefix ../blue/client",
+    "start": "node start.js"
+  }
+}
