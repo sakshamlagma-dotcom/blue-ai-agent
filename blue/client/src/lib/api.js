@@ -11,7 +11,10 @@ async function request(path, options = {}) {
   const isJson = res.headers.get("content-type")?.includes("application/json");
   const data = isJson ? await res.json() : null;
   if (!res.ok) {
-    throw new Error(data?.error || `Request failed (${res.status})`);
+    const message = [502, 503, 504].includes(res.status)
+      ? `The server is temporarily unavailable (HTTP ${res.status}). Please try again shortly.`
+      : `Request failed (HTTP ${res.status}).`;
+    throw new Error(data?.error || message);
   }
   return data;
 }
