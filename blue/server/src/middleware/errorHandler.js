@@ -8,6 +8,8 @@ export function errorHandler(err, req, res, _next) {
   if (err.code === "MISSING_API_KEY") {
     status = 503;
     message = "Blue couldn't connect to the AI service. Please check the API configuration (GEMINI_API_KEY).";
+  } else if (err.code === "AI_PROVIDER_ERROR" && err.status >= 500) {
+    message = `The AI service is temporarily unavailable (HTTP ${err.status}). Please try again shortly.`;
   } else if (err.status === 429) {
     status = 429;
     message = "Blue is receiving too many requests right now. Please wait a moment and try again.";

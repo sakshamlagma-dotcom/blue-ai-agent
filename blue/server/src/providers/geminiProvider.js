@@ -1,6 +1,8 @@
 import { env } from "../config/env.js";
 
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
+const RETRYABLE_STATUSES = new Set([502, 503, 504]);
+const RETRY_DELAYS_MS = [250, 500];
 
 function requireKey() {
   if (!env.geminiApiKey) {
@@ -63,16 +65,23 @@ async function callGemini({ contents, systemPrompt, tools, temperature = 0.6 }) 
     generationConfig: { temperature },
   };
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  let res;
+  for (let attempt = 0; ; attempt++) {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!RETRYABLE_STATUSES.has(res.status) || attempt === RETRY_DELAYS_MS.length) break;
+    await res.text();
+    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
+  }
 
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
     const err = new Error(`Gemini API error (${res.status}): ${errText.slice(0, 300)}`);
     err.status = res.status;
+    err.code = "AI_PROVIDER_ERROR";
     throw err;
   }
 

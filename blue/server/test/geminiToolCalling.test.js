@@ -5,6 +5,7 @@ process.env.GEMINI_API_KEY = "unit-test-placeholder";
 
 const { geminiProvider } = await import("../src/providers/geminiProvider.js");
 const { runAgent } = await import("../src/agents/agentEngine.js");
+const { errorHandler } = await import("../src/middleware/errorHandler.js");
 const originalFetch = globalThis.fetch;
 
 afterEach(() => {
@@ -53,6 +54,86 @@ test("parses a normal text-only Gemini response", async () => {
 
   assert.equal(result.text, "Hello from Gemini.");
   assert.deepEqual(result.toolCalls, []);
+});
+
+test("retries transient Gemini gateway errors before succeeding", async () => {
+  let attempts = 0;
+  globalThis.fetch = async () => {
+    attempts++;
+    if (attempts === 1) {
+      return {
+        ok: false,
+        status: 503,
+        text: async () => "Service unavailable",
+      };
+    }
+    return geminiResponse([{ text: "Recovered response." }]);
+  };
+
+  const result = await geminiProvider.generate({
+    messages: [{ role: "user", content: "Hello" }],
+  });
+
+  assert.equal(attempts, 2);
+  assert.equal(result.text, "Recovered response.");
+});
+
+test("reports a persistent Gemini 502 with its provider status", async () => {
+  let attempts = 0;
+  globalThis.fetch = async () => {
+    attempts++;
+    return {
+      ok: false,
+      status: 502,
+      text: async () => "Bad gateway",
+    };
+  };
+
+  await assert.rejects(
+    geminiProvider.generate({
+      messages: [{ role: "user", content: "Hello" }],
+    }),
+    (error) => {
+      assert.equal(error.status, 502);
+      assert.equal(error.code, "AI_PROVIDER_ERROR");
+      return true;
+    }
+  );
+  assert.equal(attempts, 3);
+});
+
+test("surfaces a safe, actionable message for persistent Gemini 5xx errors", () => {
+  const originalConsoleError = console.error;
+  let response;
+  console.error = () => {};
+
+  try {
+    errorHandler(
+      Object.assign(new Error("provider details stay server-side"), {
+        status: 502,
+        code: "AI_PROVIDER_ERROR",
+      }),
+      { method: "POST", path: "/api/chat" },
+      {
+        status(status) {
+          response = { status };
+          return this;
+        },
+        json(body) {
+          response.body = body;
+        },
+      }
+    );
+  } finally {
+    console.error = originalConsoleError;
+  }
+
+  assert.deepEqual(response, {
+    status: 502,
+    body: {
+      error: "The AI service is temporarily unavailable (HTTP 502). Please try again shortly.",
+    },
+  });
 });
 
 test("retains the complete Gemini Part and signature on a web_search call", async () => {
