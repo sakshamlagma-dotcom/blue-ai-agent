@@ -17,7 +17,7 @@ export const env = {
 
   aiProvider: process.env.AI_PROVIDER || "gemini",
   geminiApiKey: process.env.GEMINI_API_KEY || "",
-  geminiModel: process.env.GEMINI_MODEL || "gemini-2.0-flash",
+  geminiModel: (process.env.GEMINI_MODEL || "gemini-2.0-flash").trim(),
 
   searchProvider: process.env.SEARCH_PROVIDER || "duckduckgo",
   serpapiKey: process.env.SERPAPI_KEY || "",
@@ -42,12 +42,32 @@ export const env = {
   serverRoot,
 };
 
+export function getGeminiModelName() {
+  const modelName = (env.geminiModel || "").trim();
+  if (!modelName) {
+    const err = new Error(
+      "GEMINI_MODEL is not configured. Set it to a model enabled for your Google project and API key."
+    );
+    err.code = "INVALID_MODEL_CONFIGURATION";
+    throw err;
+  }
+  return modelName;
+}
+
 export function assertConfigured() {
   const warnings = [];
-  if (!env.geminiApiKey && env.aiProvider === "gemini") {
-    warnings.push(
-      "GEMINI_API_KEY is not set. Chat/agent requests will fail until you add it to server/.env."
-    );
+  if (env.aiProvider === "gemini") {
+    if (!env.geminiApiKey) {
+      warnings.push(
+        "GEMINI_API_KEY is not set. Chat/agent requests will fail until you add it to server/.env."
+      );
+    }
+
+    if (!env.geminiModel || !env.geminiModel.trim()) {
+      warnings.push(
+        "GEMINI_MODEL is not set. Set it to a model enabled for your Google project and API key."
+      );
+    }
   }
   return warnings;
 }
