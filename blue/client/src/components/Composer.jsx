@@ -6,6 +6,7 @@ export default function Composer({ onSend, onStop, isSending, pendingFiles, onAt
   const textareaRef = useRef(null);
 
   function handleSend() {
+    if (isSending) return;
     if (!text.trim() && pendingFiles.length === 0) return;
     onSend(text.trim());
     setText("");
@@ -14,6 +15,10 @@ export default function Composer({ onSend, onStop, isSending, pendingFiles, onAt
 
   function handleKeyDown(e) {
     if (e.key === "Enter" && !e.shiftKey) {
+      if (isSending) {
+        e.preventDefault();
+        return;
+      }
       e.preventDefault();
       handleSend();
     }
@@ -49,6 +54,7 @@ export default function Composer({ onSend, onStop, isSending, pendingFiles, onAt
           className="composer-btn"
           title="Attach file"
           onClick={() => fileInputRef.current?.click()}
+          disabled={isSending}
         >
           📎
         </button>
@@ -71,6 +77,7 @@ export default function Composer({ onSend, onStop, isSending, pendingFiles, onAt
           value={text}
           onChange={autoGrow}
           onKeyDown={handleKeyDown}
+          disabled={isSending}
         />
 
         {isSending ? (

@@ -28,6 +28,7 @@ export default function App() {
   const [error, setError] = useState(null);
   const scrollRef = useRef(null);
   const abortRef = useRef(false);
+  const activeRequestRef = useRef(null);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -100,7 +101,9 @@ export default function App() {
 
   async function sendMessage(text) {
     if (!text && pendingFiles.length === 0) return;
+    if (isSending) return;
     setError(null);
+
     const attachmentsToSend = pendingFiles;
     setPendingFiles([]);
 
@@ -115,12 +118,16 @@ export default function App() {
     setLiveSteps([{ label: "Understanding request", status: "active" }]);
     abortRef.current = false;
 
+    const controller = new AbortController();
+    activeRequestRef.current = controller;
+
     try {
       const res = await api.sendMessage({
         message: text || "Please analyze the attached file(s).",
         conversationId: activeId,
         mode,
         attachments: attachmentsToSend,
+        signal: controller.signal,
       });
 
       if (abortRef.current) return;
@@ -134,6 +141,13 @@ export default function App() {
 
       setMessages((prev) => [...prev, res.message]);
     } catch (e) {
+      if (e.name === "AbortError") {
+        setMessages((prev) => [
+          ...prev,
+          { id: `cancel-${Date.now()}`, role: "assistant", content: "The request was cancelled.", isError: true },
+        ]);
+        return;
+      }
       setMessages((prev) => [
         ...prev,
         { id: `err-${Date.now()}`, role: "assistant", content: e.message, isError: true },
@@ -141,11 +155,17 @@ export default function App() {
     } finally {
       setIsSending(false);
       setLiveSteps([]);
+      if (activeRequestRef.current === controller) {
+        activeRequestRef.current = null;
+      }
     }
   }
 
   function handleStop() {
     abortRef.current = true;
+    if (activeRequestRef.current) {
+      activeRequestRef.current.abort();
+    }
     setIsSending(false);
     setLiveSteps([]);
   }
