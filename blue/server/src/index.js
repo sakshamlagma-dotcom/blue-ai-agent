@@ -1,3 +1,4 @@
+```js
 import express from "express";
 import cors from "cors";
 import path from "node:path";
@@ -12,6 +13,10 @@ import { apiRateLimiter } from "./middleware/rateLimiter.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
 const app = express();
+
+// Render runs behind a reverse proxy.
+// Trust one proxy hop so express-rate-limit can identify client IPs.
+app.set("trust proxy", 1);
 
 app.use(cors({ origin: env.clientOrigin, credentials: true }));
 app.use(express.json({ limit: "2mb" }));
@@ -30,10 +35,13 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 const warnings = assertConfigured();
-for (const w of warnings) console.warn(`[Blue] WARNING: ${w}`);
+for (const w of warnings) {
+  console.warn(`[Blue] WARNING: ${w}`);
+}
 
-app.listen(env.port, () => {
+app.listen(env.port, "0.0.0.0", () => {
   console.log(`\n  🔵 Blue server running at http://localhost:${env.port}`);
   console.log(`     AI provider: ${env.aiProvider} (model: ${env.geminiModel})`);
   console.log(`     Client origin (CORS): ${env.clientOrigin}\n`);
 });
+```
